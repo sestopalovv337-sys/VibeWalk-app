@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VibeWalk — ИИ-проводник по Ростову-на-Дону</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --dark-navy: #12212E;
+            --deep-teal: #307082;
+            --muted-teal: #6CA3A2;
+            --cream: #ECE7DC;
+            --orange: #EA9940;
+            --white: #FFFFFF;
+            --card-shadow: 0 6px 18px rgba(18, 33, 46, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--dark-navy) 0%, #1d3549 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100dvh;
+            overflow: hidden;
+            color: var(--dark-navy);
+        }
+
+        #app {
+            width: 100%;
+            max-width: 460px;
+            height: 100dvh;
+            background-color: var(--cream);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+        }
+
+        @media (min-width: 500px) {
+            #app {
+                height: 94vh;
+                border-radius: 28px;
+                border: 6px solid #243b4f;
+            }
+        }
+
+        header {
+            background-color: var(--dark-navy);
+            color: var(--cream);
+            padding: 14px 18px 10px;
+            z-index: 20;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .header-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-svg {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        .brand-title {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: 0.3px;
+            line-height: 1.1;
+        }
+
+        .brand-title span {
+            color: var(--orange);
+        }
+
+        .brand-subtitle {
+            font-size: 11px;
+            color: var(--muted-teal);
+            font-weight: 600;
+        }
+
+        .guest-selector {
+            display: flex;
+            align-items: center;
+            background-color: rgba(48, 112, 130, 0.35);
+            border: 1px solid var(--muted-teal);
+            border-radius: 20px;
+            padding: 4px 10px;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .guest-btn {
+            background: var(--orange);
+            color: var(--dark-navy);
+            border: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            font-weight: 800;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 6px;
+            background-color: rgba(255,255,255,0.06);
+            padding: 4px;
+            border-radius: 12px;
+        }
+
+        .nav-tab {
+            flex: 1;
+            text-align: center;
+            padding: 7px 6px;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--cream);
+            background: transparent;
+            border: none;
+            border-radius: 9px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .nav-tab.active {
+            background-color: var(--orange);
+            color: var(--dark-navy);
+        }
+
+        .view-section {
+            flex: 1;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            min-height: 0;
+            position: relative;
+        }
+
+        .view-section.active {
+            display: flex;
+        }
+
+        .quick-chips {
+            display: flex;
+            gap: 8px;
+            padding: 10px 16px;
+            overflow-x: auto;
+            background-color: rgba(108, 163, 162, 0.15);
+            border-bottom: 1px solid rgba(48, 112, 130, 0.15);
+            scrollbar-width: none;
+            flex-shrink: 0;
+        }
+        .quick-chips::-webkit-scrollbar { display: none; }
+
+        .chip {
+            white-space: nowrap;
+            background-color: var(--white);
+            color: var(--dark-navy);
+            border: 1.5px solid var(--muted-teal);
+            padding: 6px 12px;
+            border-radius: 18px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s;
+            flex-shrink: 0;
+        }
+
+        .chip:hover, .chip:active {
+            background-color: var(--deep-teal);
+            color: var(--white);
+            border-color: var(--deep-teal);
+        }
+
+        #chat-window {
+            flex: 1;
+            padding: 16px 16px 96px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            scroll-behavior: smooth;
+        }
+
+        .msg-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+            animation: fadeIn 0.25s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .msg-row.user {
+            justify-content: flex-end;
+        }
+
+        .bot-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            flex-shrink: 0;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+        }
+
+        .bubble {
+            max-width: 85%;
+            padding: 12px 15px;
+            border-radius: 18px;
+            font-size: 14px;
+            line-height: 1.45;
+        }
+
+        .bubble.bot {
+            background-color: var(--white);
+            color: var(--dark-navy);
+            border-bottom-left-radius: 4px;
+            box-shadow: var(--card-shadow);
+        }
+
+        .bubble.user {
+            background-color: var(--deep-teal);
+            color: var(--white);
+            border-bottom-right-radius: 4px;
+            font-weight: 600;
+        }
+
+        .walk-summary {
+            background: linear-gradient(135deg, var(--dark-navy), var(--deep-teal));
+            color: var(--cream);
+            padding: 10px 12px;
+            border-radius: 12px;
+            margin: 10px 0;
+            font-size: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .walk-summary-title {
+            color: var(--orange);
+            font-weight: 800;
+            font-size: 13px;
+        }
+
+        .cards-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .place-card {
+            background-color: var(--cream);
+            border-radius: 14px;
+            padding: 12px;
+            border-left: 5px solid var(--deep-teal);
+            position: relative;
+        }
+
+        .place-card.sponsor {
+            border-left-color: var(--orange);
+            background: linear-gradient(to right, #fff8ef, var(--cream));
+        }
+
+        .badge-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .cat-label {
+            font-size: 11px;
+            font-weight: 800;
+            color: var(--deep-teal);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .sponsor-badge {
+            background-color: var(--orange);
+            color: var(--dark-navy);
+            font-size: 10px;
+            font-weight: 800;
+            padding: 2px 8px;
+            border-radius: 6px;
+        }
+
+        .step-badge {
+            background-color: var(--dark-navy);
+            color: var(--orange);
+            font-size: 10px;
+            font-weight: 800;
+            padding: 2px 8px;
+            border-radius: 6px;
+        }
+
+        .place-name {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--dark-navy);
+            margin-bottom: 4px;
+        }
+
+        .place-metrics {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--dark-navy);
+            margin-bottom: 6px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .place-metrics span.total-price {
+            color: var(--deep-teal);
+        }
+
+        .tags-wrap {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-bottom: 8px;
+        }
+
+        .tag {
+            background-color: var(--muted-teal);
+            color: var(--white);
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 8px;
+        }
+
+        .place-addr {
+            font-size: 12px;
+            color: #4a5c6a;
+            margin-bottom: 4px;
+        }
+
+        .ai-reason {
+            font-size: 11.5px;
+            background-color: rgba(255,255,255,0.7);
+            padding: 6px 8px;
+            border-radius: 8px;
+            color: var(--dark-navy);
+            margin-bottom: 8px;
+            border-left: 2px solid var(--orange);
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .btn-book, .btn-route, .btn-vote {
+            flex: 1;
+            border: none;
+            padding: 8px 8px;
+            border-radius: 9px;
+            font-size: 11px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: 0.2s;
+            text-align: center;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-book {
+            background-color: var(--orange);
+            color: var(--dark-navy);
+        }
+
+        .btn-route {
+            background-color: var(--muted-teal);
+            color: var(--white);
+        }
+
+        .btn-vote {
+            background-color: var(--dark-navy);
+            color: var(--cream);
+        }
+
+        .btn-share-poll {
+            margin-top: 10px;
+            width: 100%;
+            background-color: var(--deep-teal);
+            color: var(--white);
+            border: none;
+            padding: 9px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        /* Парящее облачное меню ввода */
+        .input-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            padding: 12px 16px 20px;
+            background: linear-gradient(to top, var(--cream) 75%, rgba(236, 231, 220, 0));
+            gap: 10px;
+            align-items: center;
+            z-index: 15;
+        }
+
+        #chat-input {
+            flex: 1;
+            padding: 14px 20px;
+            border: none;
+            border-radius: 26px;
+            background-color: var(--white);
+            color: var(--dark-navy);
+            font-size: 14.5px;
+            font-weight: 600;
+            outline: none;
+            box-shadow: 0 6px 18px rgba(18, 33, 46, 0.12);
+        }
+
+        #send-btn {
+            background-color: var(--orange);
+            color: var(--dark-navy);
+            border: none;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            font-size: 18px;
+            font-weight: 800;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 6px 14px rgba(234, 153, 64, 0.35);
+        }
+
+        .tours-container, .catalog-container {
+            padding: 16px;
+            overflow-y: auto;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .tour-preset-card {
+            background-color: var(--white);
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: var(--card-shadow);
+            border-top: 4px solid var(--orange);
+        }
+
+        .tour-preset-card h3 {
+            font-size: 17px;
+            margin-bottom: 6px;
+        }
+
+        .tour-preset-card p {
+            font-size: 13px;
+            color: #4a5c6a;
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+
+        .catalog-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 10px 14px;
+            border-radius: 12px;
+            border: 1.5px solid var(--muted-teal);
+            background-color: var(--white);
+            font-size: 13px;
+            font-weight: 600;
+            outline: none;
+        }
+
+        .btn-sync {
+            background-color: var(--deep-teal);
+            color: var(--white);
+            border: none;
+            padding: 10px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 800;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .filter-bar {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+            flex-shrink: 0;
+        }
+
+        .modal-overlay {
+            position: absolute;
+            inset: 0;
+            background-color: rgba(18, 33, 46, 0.75);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            z-index: 100;
+        }
+
+        .modal-overlay.active { display: flex; }
+
+        .modal-box {
+            background-color: var(--cream);
+            width: 100%;
+            max-width: 360px;
+            border-radius: 20px;
+            padding: 20px;
+            border: 2px solid var(--orange);
+        }
+
+        .modal-title { font-size: 18px; font-weight: 800; margin-bottom: 4px; }
+        .modal-sub { font-size: 12px; color: var(--deep-teal); font-weight: 700; margin-bottom: 12px; }
+        .form-group { margin-bottom: 10px; }
+        .form-group label { display: block; font-size: 12px; font-weight: 700; margin-bottom: 4px; }
+        .form-group input, .form-group select {
+            width: 100%; padding: 9px 12px; border-radius: 10px;
+            border: 1.5px solid var(--muted-teal); background: var(--white); font-weight: 600;
+        }
+        .modal-actions { display: flex; gap: 8px; margin-top: 14px; }
+        .btn-cancel { flex: 1; padding: 10px; border-radius: 10px; border: 1.5px solid var(--dark-navy); background: transparent; font-weight: 700; cursor: pointer; }
+        .btn-confirm { flex: 1.5; padding: 10px; border-radius: 10px; border: none; background: var(--orange); color: var(--dark-navy); font-weight: 800; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<svg style="display:none;">
+    <symbol id="vibewalk-wolf" viewBox="0 0 120 120">
+        <defs>
+            <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#195363"/>
+                <stop offset="100%" stop-color="#307082"/>
+            </linearGradient>
+            <linearGradient id="wolfGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#EA9940"/>
+                <stop offset="55%" stop-color="#f3be7a"/>
+                <stop offset="100%" stop-color="#ECE7DC"/>
+            </linearGradient>
+        </defs>
+        <rect width="120" height="120" rx="26" fill="url(#skyGrad)"/>
+        <polygon points="24,14 26,20 32,22 26,24 24,30 22,24 16,22 22,20" fill="#EA9940"/>
+        <polygon points="56,12 57.5,16 62,17.5 57.5,19 56,23 54.5,19 50,17.5 54.5,16" fill="#6CA3A2"/>
+        <polygon points="98,28 99.5,32 104,33.5 99.5,35 98,39 96.5,35 92,33.5 96.5,32" fill="#ECE7DC"/>
+        <polygon points="0,78 22,48 48,72 62,40 88,68 104,46 120,74 120,120 0,120" fill="#183b49"/>
+        <rect y="74" width="120" height="46" fill="#12212E"/>
+        <path d="M 42,120 C 56,105 92,98 86,82 C 82,74 68,74 62,74 L 74,74 C 88,76 104,84 96,102 C 90,114 78,120 72,120 Z" fill="#6CA3A2"/>
+        <path d="M 32,74 C 25,74 20,79 20,86 C 20,95 32,106 32,106 C 32,106 44,95 44,86 C 44,79 39,74 32,74 Z" fill="#6CA3A2"/>
+        <circle cx="32" cy="85" r="5" fill="#12212E"/>
+        <path d="M 28,36 L 38,18 L 48,36" fill="none" stroke="#EA9940" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M 72,36 L 82,18 L 92,36" fill="none" stroke="#EA9940" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M 26,42 L 45,42 C 47,42 49,44 50,47 L 60,78 L 70,47 C 71,44 73,42 75,42 L 94,42 L 66,98 C 63,103 57,103 54,98 Z" fill="url(#wolfGrad)"/>
+        <circle cx="47" cy="60" r="3.6" fill="#12212E"/>
+        <circle cx="73" cy="60" r="3.6" fill="#12212E"/>
+        <polygon points="55,91 65,91 60,99" fill="#12212E"/>
+    </symbol>
+</svg>
+
+<div id="app">
+    <header>
+        <div class="header-top">
+            <div class="brand">
+                <svg class="logo-svg"><use href="#vibewalk-wolf"></use></svg>
+                <div>
+                    <div class="brand-title">Vibe<span>Walk</span></div>
+                    <div class="brand-subtitle">Ростов-на-Дону • Live AI & OSM</div>
+                </div>
+            </div>
+            <div class="guest-selector">
+                <span>👥 Гостей:</span>
+                <button class="guest-btn" onclick="changeGuests(-1)">−</button>
+                <span id="guest-count">2</span>
+                <button class="guest-btn" onclick="changeGuests(1)">+</button>
+            </div>
+        </div>
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="switchTab('chat', this)">💬 ИИ-Подбор</button>
+            <button class="nav-tab" onclick="switchTab('tours', this)">🗺️ Маршруты</button>
+            <button class="nav-tab" id="tab-catalog-btn" onclick="switchTab('catalog', this)">📚 База (Live)</button>
+        </div>
+    </header>
+
+    <!-- ВКЛАДКА 1: ИИ-ЧАТ -->
+    <div id="view-chat" class="view-section active">
+        <div class="quick-chips">
+            <button class="chip" onclick="quickAsk('Нас трое, хотим посидеть в необычном месте до 4500 рублей')">✨ Необычное место</button>
+            <button class="chip" onclick="requestSmartRoute('Гастротур')">🍽️ Гастротур (3 точки)</button>
+            <button class="chip" onclick="requestSmartRoute('Романтический вечер')">❤️ Свидание</button>
+            <button class="chip" onclick="quickAsk('Уютная кофейня на Пушкинской попить кофе с десертом')">☕ Кофе на Пушкинской</button>
+            <button class="chip" onclick="requestSmartRoute('Барный маршрут')">🍹 Барный тур</button>
+        </div>
+
+        <div id="chat-window">
+            <div class="msg-row bot">
+                <svg class="bot-avatar"><use href="#vibewalk-wolf"></use></svg>
+                <div class="bubble bot">
+                    Привет! Я <b>Волчок</b> — твой ИИ-проводник по Ростову-на-Дону 🐾<br><br>
+                    Я подключен к живой базе заведений города (OpenStreetMap) и серверному ИИ. Напиши любой запрос — я рассчитаю бюджет на компанию, построю маршрут по координатам и создам комнату голосования для друзей!
+                </div>
+            </div>
+        </div>
+
+        <div class="input-bar">
+            <input type="text" id="chat-input" placeholder="Куда пойдем в Ростове?.." onkeypress="if(event.key==='Enter') sendUserMessage()">
+            <button id="send-btn" onclick="sendUserMessage()">➤</button>
+        </div>
+    </div>
+
+    <!-- ВКЛАДКА 2: УМНЫЕ МАРШРУТЫ -->
+    <div id="view-tours" class="view-section">
+        <div class="tours-container">
+            <div class="tour-preset-card">
+                <h3>🍽️ Гастрономический тур</h3>
+                <p>Маршрут из 3 точек, подобранных по минимальному расстоянию пешком: кофейня, ресторан для ужина и вечерний бар.</p>
+                <button class="btn-book" onclick="switchTab('chat', document.querySelectorAll('.nav-tab')[0]); requestSmartRoute('Гастротур');">Построить маршрут по гео-базе</button>
+            </div>
+            <div class="tour-preset-card">
+                <h3>❤️ Романтический вечер</h3>
+                <p>Сценарий для свидания: необычное арт-пространство, винный ресторан и уютная локация для финала прогулки.</p>
+                <button class="btn-book" onclick="switchTab('chat', document.querySelectorAll('.nav-tab')[0]); requestSmartRoute('Романтический вечер');">Построить маршрут по гео-базе</button>
+            </div>
+            <div class="tour-preset-card">
+                <h3>🍹 Барный маршрут</h3>
+                <p>Три атмосферных бара Ростова в пешей доступности друг от друга с расчетом общего чека на компанию.</p>
+                <button class="btn-book" onclick="switchTab('chat', document.querySelectorAll('.nav-tab')[0]); requestSmartRoute('Барный маршрут');">Построить маршрут по гео-базе</button>
+            </div>
+            <div class="tour-preset-card">
+                <h3>🎭 Культурный вайб Ростова</h3>
+                <p>Сочетание парков, кино или театров с гастрономическими местами поблизости.</p>
+                <button class="btn-book" onclick="switchTab('chat', document.querySelectorAll('.nav-tab')[0]); requestSmartRoute('Культурный вечер');">Построить маршрут по гео-базе</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ВКЛАДКА 3: ЖИВАЯ БАЗА ЗАВЕДЕНИЙ -->
+    <div id="view-catalog" class="view-section">
+        <div class="catalog-container">
+            <div class="catalog-controls">
+                <input type="text" id="catalog-search" class="search-input" placeholder="🔍 Поиск по названию или улице..." oninput="loadCatalog(currentCategory)">
+                <button class="btn-sync" id="sync-btn" onclick="syncWithOSM()">🔄 Обновить из OSM</button>
+            </div>
+            <div class="filter-bar">
+                <button class="chip" onclick="loadCatalog('Все')">Все</button>
+                <button class="chip" onclick="loadCatalog('Кафе/Кофейня')">Кафе</button>
+                <button class="chip" onclick="loadCatalog('Ресторан')">Рестораны</button>
+                <button class="chip" onclick="loadCatalog('Бар')">Бары</button>
+                <button class="chip" onclick="loadCatalog('Развлечения')">Развлечения</button>
+                <button class="chip" onclick="loadCatalog('Необычные места')">Необычные</button>
+            </div>
+            <div id="catalog-list" class="cards-list"></div>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО БРОНИРОВАНИЯ -->
+    <div id="booking-modal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-title" id="modal-place-name">Бронирование столика</div>
+            <div class="modal-sub" id="modal-place-info">Онлайн-бронь через сервер VibeWalk</div>
+            <div class="form-group">
+                <label>Ваше имя</label>
+                <input type="text" id="book-name" value="Виктор">
+            </div>
+            <div class="form-group">
+                <label>Количество гостей</label>
+                <input type="number" id="book-guests" min="1" max="20" value="2">
+            </div>
+            <div class="form-group">
+                <label>Время визита</label>
+                <select id="book-time">
+                    <option>Сегодня, 19:00</option>
+                    <option>Сегодня, 20:30</option>
+                    <option>Завтра, 18:00</option>
+                    <option>В выходные, 19:30</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeBookingModal()">Отмена</button>
+                <button class="btn-confirm" onclick="confirmBooking()">Подтвердить бронь</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Адрес твоего бэкенда (локально или на Render.com)
+    const API_BASE = "http://localhost:8000/api";
+
+    let guestsCount = 2;
+    let currentCategory = "Все";
+    const chatWindow = document.getElementById('chat-window');
+    const chatInput = document.getElementById('chat-input');
+
+    async function fetchStats() {
+        try {
+            const res = await fetch(`${API_BASE}/stats`);
+            const data = await res.json();
+            document.getElementById('tab-catalog-btn').innerText = `📚 База (${data.total_places})`;
+        } catch (e) {
+            console.log("Сервер пока не запущен, используем автономный режим.");
+        }
+    }
+    fetchStats();
+
+    function changeGuests(delta) {
+        guestsCount = Math.max(1, Math.min(15, guestsCount + delta));
+        document.getElementById('guest-count').innerText = guestsCount;
+        document.getElementById('book-guests').value = guestsCount;
+    }
+
+    function switchTab(tabId, btnEl) {
+        document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+        document.getElementById('view-' + tabId).classList.add('active');
+        btnEl.classList.add('active');
+        if (tabId === 'catalog') loadCatalog(currentCategory);
+    }
+
+    function quickAsk(text) {
+        chatInput.value = text;
+        sendUserMessage();
+    }
+
+    async function sendUserMessage() {
+        const text = chatInput.value.trim();
+        if (!text) return;
+
+        chatWindow.innerHTML += `<div class="msg-row user"><div class="bubble user">${text}</div></div>`;
+        chatInput.value = '';
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+
+        try {
+            const res = await fetch(`${API_BASE}/chat`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message: text, guests_count: guestsCount })
+            });
+            const data = await res.json();
+            if (data.guests_count) {
+                guestsCount = data.guests_count;
+                document.getElementById('guest-count').innerText = guestsCount;
+            }
+            renderBotCards(data.places, data.wolf_intro, false);
+        } catch (err) {
+            chatWindow.innerHTML += `<div class="msg-row bot"><svg class="bot-avatar"><use href="#vibewalk-wolf"></use></svg><div class="bubble bot">⚠️ Сервер API (localhost:8000) не запущен. Запусти <code>uvicorn main:app --reload</code> в папке backend!</div></div>`;
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+    }
+
+    async function requestSmartRoute(routeType) {
+        try {
+            const res = await fetch(`${API_BASE}/routes`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ route_type: routeType, guests_count: guestsCount })
+            });
+            const data = await res.json();
+            renderBotCards(data.places, `Готов персональный маршрут: <b>${data.title}</b>. Точки подобраны по реальным координатам Ростова:`, true);
+        } catch (err) {
+            alert("Запустите бэкенд-сервер для генерации гео-маршрутов!");
+        }
+    }
+
+    function renderBotCards(items, introHtml, isRoute) {
+        const sumPerPerson = items.reduce((acc, it) => acc + it.budget_per_person, 0);
+        const totalForGroup = sumPerPerson * guestsCount;
+
+        let summaryHtml = isRoute ? `
+            <div class="walk-summary">
+                <div class="walk-summary-title">📊 Расчет бюджета маршрута (${items.length} локации):</div>
+                <div>• На 1 человека: <b>${sumPerPerson} ₽</b></div>
+                <div>• На компанию (${guestsCount} чел.): <b>${totalForGroup} ₽</b></div>
+            </div>
+        ` : '';
+
+        const pollId = "poll_" + Math.random().toString(36).substring(2, 7);
+
+        const cardsHtml = items.map((item, idx) => {
+            const isSponsor = !isRoute && (item.is_sponsor_card || (idx === 0 && item.is_partner));
+            const groupCost = item.budget_per_person * guestsCount;
+            const tagsHtml = (item.tags || []).map(t => `<span class="tag">#${t}</span>`).join('');
+            const mapLink = `https://yandex.ru/maps/?text=${encodeURIComponent(item.address + ' ' + item.name)}`;
+            const safeName = item.name.replace(/'/g, "\\'");
+
+            return `
+                <div class="place-card ${isSponsor ? 'sponsor' : ''}">
+                    <div class="badge-row">
+                        <span class="cat-label">${item.category}</span>
+                        ${isRoute && item.stepTitle ? `<span class="step-badge">${item.stepTitle}</span>` : ''}
+                        ${isSponsor ? `<span class="sponsor-badge">Партнер VibeWalk</span>` : ''}
+                    </div>
+                    <div class="place-name">${item.name}</div>
+                    <div class="place-metrics">
+                        <span>⭐ ${item.rating}</span>
+                        <span>👤 ~${item.budget_per_person} ₽/чел.</span>
+                        <span class="total-price">👥 На ${guestsCount} чел.: ${groupCost} ₽</span>
+                    </div>
+                    <div class="tags-wrap">${tagsHtml}</div>
+                    <div class="ai-reason">🤖 <b>Волчок:</b> ${item.reasonText || 'Отличный выбор'}${isSponsor ? ' • Скидка 10% по промокоду VIBE' : ''}</div>
+                    <div class="place-addr">📍 ${item.address}</div>
+                    <div class="place-addr">🕒 ${item.opening_hours || 'Ежедневно 10:00–23:00'}</div>
+                    <div class="card-actions">
+                        <button class="btn-book" onclick="openBookingModal('${safeName}', '${item.address}')">📅 Бронь</button>
+                        <a href="${mapLink}" target="_blank" class="btn-route">🗺️ Карта</a>
+                        <button class="btn-vote" onclick="votePlace(this)">👍 <span>0</span></button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        chatWindow.innerHTML += `
+            <div class="msg-row bot">
+                <svg class="bot-avatar"><use href="#vibewalk-wolf"></use></svg>
+                <div class="bubble bot">
+                    ${introHtml}
+                    ${summaryHtml}
+                    <div class="cards-list">${cardsHtml}</div>
+                    <button class="btn-share-poll" onclick="createServerPoll(this)">🔗 Создать ссылку на свайп-голосование для друзей</button>
+                </div>
+            </div>
+        `;
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    function votePlace(btn) {
+        const span = btn.querySelector('span');
+        span.innerText = parseInt(span.innerText, 10) + 1;
+        btn.style.backgroundColor = '#307082';
+    }
+
+    async function loadCatalog(category) {
+        currentCategory = category;
+        const search = document.getElementById('catalog-search').value;
+        const listEl = document.getElementById('catalog-list');
+
+        try {
+            const url = `${API_BASE}/places?category=${encodeURIComponent(category)}&search=${encodeURIComponent(search)}&limit=80`;
+            const res = await fetch(url);
+            const data = await res.json();
+            document.getElementById('tab-catalog-btn').innerText = `📚 База (${data.total})`;
+
+            listEl.innerHTML = data.items.map(item => {
+                const mapLink = `https://yandex.ru/maps/?text=${encodeURIComponent(item.address + ' ' + item.name)}`;
+                const safeName = item.name.replace(/'/g, "\\'");
+                return `
+                    <div class="place-card" style="background-color: var(--white);">
+                        <div class="badge-row">
+                            <span class="cat-label">${item.category}</span>
+                            <span>⭐ <b>${item.rating}</b></span>
+                        </div>
+                        <div class="place-name">${item.name}</div>
+                        <div class="place-metrics"><span>Средний чек: ~${item.budget_per_person} ₽/чел.</span></div>
+                        <div class="tags-wrap">${(item.tags || []).map(t => `<span class="tag">#${t}</span>`).join('')}</div>
+                        <div class="place-addr">📍 ${item.address}</div>
+                        <div class="card-actions">
+                            <button class="btn-book" onclick="openBookingModal('${safeName}', '${item.address}')">📅 Забронировать</button>
+                            <a href="${mapLink}" target="_blank" class="btn-route">🗺️ Маршрут</a>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        } catch (e) {
+            listEl.innerHTML = `<div style="padding:12px;">Запустите сервер бэкенда для загрузки каталога.</div>`;
+        }
+    }
+
+    async function syncWithOSM() {
+        const btn = document.getElementById('sync-btn');
+        btn.innerText = "⏳ Загрузка OSM...";
+        btn.disabled = true;
+        try {
+            const res = await fetch(`${API_BASE}/sync`, { method: "POST" });
+            const data = await res.json();
+            alert(data.message);
+            await fetchStats();
+            await loadCatalog(currentCategory);
+        } catch (e) {
+            alert("Ошибка соединения с сервером при синхронизации.");
+        } finally {
+            btn.innerText = "🔄 Обновить из OSM";
+            btn.disabled = false;
+        }
+    }
+
+    function openBookingModal(name, addr) {
+        document.getElementById('modal-place-name').innerText = name;
+        document.getElementById('modal-place-info').innerText = addr;
+        document.getElementById('book-guests').value = guestsCount;
+        document.getElementById('booking-modal').classList.add('active');
+    }
+
+    function closeBookingModal() {
+        document.getElementById('booking-modal').classList.remove('active');
+    }
+
+    async function confirmBooking() {
+        const place = document.getElementById('modal-place-name').innerText;
+        const guestName = document.getElementById('book-name').value || "Гость";
+        const g = parseInt(document.getElementById('book-guests').value, 10) || 2;
+        const t = document.getElementById('book-time').value;
+        closeBookingModal();
+
+        try {
+            const res = await fetch(`${API_BASE}/bookings`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ place_name: place, guest_name: guestName, guests_count: g, visit_time: t })
+            });
+            const data = await res.json();
+            chatWindow.innerHTML += `
+                <div class="msg-row bot">
+                    <svg class="bot-avatar"><use href="#vibewalk-wolf"></use></svg>
+                    <div class="bubble bot">
+                        ✅ <b>${data.message}</b><br>
+                        Гость: ${guestName} (${g} чел.) • Время: ${t}<br>
+                        <i>Партнерский купон VibeWalk закреплен за вашей бронью в БД.</i>
+                    </div>
+                </div>
+            `;
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        } catch (e) {
+            alert("Не удалось сохранить бронь на сервере.");
+        }
+    }
+
+    function createServerPoll(btn) {
+        btn.innerText = '✅ Комната голосования создана! Ссылка скопирована';
+        btn.style.backgroundColor = '#EA9940';
+        btn.style.color = '#12212E';
+    }
+</script>
+
+</body>
+</html>
